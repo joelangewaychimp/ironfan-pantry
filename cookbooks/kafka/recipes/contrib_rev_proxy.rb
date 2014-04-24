@@ -42,6 +42,29 @@ if node[:kafka][:contrib][:http_basic_auth] and not node[:kafka][:contrib][:auth
   end
 end
 
+if node.default[:kafka][:contrib][:ssl]
+  node.default[:kafka][:contrib][:ssl_certificate_file] = File.join(node[:nginx][:dir], 'conf.d', 'kafka_contrib_proxy.crt') 
+  
+  file node[:kafka][:contrib][:ssl_certificate_file] do
+    owner node[:nginx][:user]
+    group node[:nginx][:group]
+    mode 0600
+    action :create
+    content node[:kafka][:contrib][:ssl_certificate]
+  end
+
+  node.default[:kafka][:contrib][:ssl_certificate_key_file] = File.join(node[:nginx][:dir], 'conf.d', 'kafka_contrib_proxy.key')
+
+  file node[:kafka][:contrib][:ssl_certificate_key_file] do
+    owner node[:nginx][:user]
+    group node[:nginx][:group]
+    mode 0600
+    action :create
+    content node[:kafka][:contrib][:ssl_certificate_key]
+  end
+
+end
+
 template File.join(node[:nginx][:dir], 'conf.d', 'kafka_contrib_proxy.conf') do
   source        "kafka_contrib_proxy.conf.erb"
   owner         node[:nginx][:user]
@@ -51,5 +74,9 @@ template File.join(node[:nginx][:dir], 'conf.d', 'kafka_contrib_proxy.conf') do
     :kafka_contrib      => node[:kafka][:contrib],
   })
     
+  file File.join(node[:nginx][:dir], "sites-enabled/default") do
+    action :delete
+  end
+
   notifies      :restart, "service[nginx]"
 end
